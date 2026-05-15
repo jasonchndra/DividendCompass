@@ -3,10 +3,10 @@ import yfinance as yf
 import base64
 from pathlib import Path
 
-IDX_LOGO_PATH = "C:/Users/j450n/Downloads/1752803497-6879a8a90429c.webp"
-LINKEDIN_LOGO_PATH = "C:/Users/j450n/Downloads/LinkedIn_logo_initials.png"
-GITHUB_LOGO_PATH = "C:/Users/j450n/Downloads/github-6980894_1280.png"
-BG_IMAGE_PATH = "C:/Users/j450n/Downloads/jakub-zerdzicki-ip7GFn5JqX8-unsplash.jpg"
+IDX_LOGO_PATH = "images/idx_logo.webp"
+BG_IMAGE_PATH = "images/background.jpg"
+LINKEDIN_LOGO_PATH = "images/linkedin_logo.png"
+GITHUB_LOGO_PATH = "images/github_logo.png"
 
 st.markdown(
     """
