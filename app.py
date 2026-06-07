@@ -245,6 +245,66 @@ def css_for_theme(mode):
       border-radius: 2px;
       background: none;
     }}
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 6px;
+        background-color: transparent;
+        border-bottom: 1.5px solid #353951;
+        padding-bottom: 0.2em;
+        margin-bottom: 0.6em;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        background-color: rgba(35, 42, 49, 0.55);
+        border-radius: 10px 10px 0 0;
+        color: #9ba0b8 !important;
+        font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+        font-size: 0.88em;
+        font-weight: 500;
+        padding: 0.45em 0.75em;
+        border: 1px solid transparent;
+        transition: color 0.16s, background 0.16s, border-color 0.16s;
+    }}
+    .stTabs [data-baseweb="tab"]:hover {{
+        color: #d8dbe8 !important;
+        background-color: rgba(35, 42, 49, 0.85);
+    }}
+    .stTabs [aria-selected="true"] {{
+        background-color: rgba(19, 80, 54, 0.35) !important;
+        color: #51ca7c !important;
+        border-color: #34374c !important;
+        border-bottom-color: transparent !important;
+    }}
+    .stTabs [data-baseweb="tab-panel"] {{
+        padding-top: 0.4em;
+    }}
+    .placeholder-card {{
+        background: linear-gradient(120deg,#232a31 92%,#135036 100%);
+        border-radius: 17px;
+        border: 1.2px solid #34374c;
+        box-shadow: 0 2px 18px 0 rgba(32,41,21,0.12), 0 1.5px 0px 0 rgba(90,169,90,0.09);
+        padding: 2.2em 1.4em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 1.4em;
+        text-align: center;
+    }}
+    .placeholder-icon {{
+        font-size: 2.1em;
+        margin-bottom: 0.45em;
+        opacity: 0.92;
+    }}
+    .placeholder-title {{
+        color: #c4c7de;
+        font-size: 1.08em;
+        font-weight: 500;
+        margin-bottom: 0.35em;
+        font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+    }}
+    .placeholder-subtitle {{
+        color: #7d8199;
+        font-size: 0.95em;
+        font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+    }}
     </style>
     """
 
@@ -262,13 +322,6 @@ st.markdown(
     "<h1 style='text-align: center; margin-bottom: 0.3em; margin-top: 0.3em; color: #EEE; font-family: Poppins, Arial, Helvetica, sans-serif;'>Dividend <span style=\"display: inline-block; margin-left: 0.32em;\">Compass</span></h1>",
     unsafe_allow_html=True
 )
-
-with st.form(key="main_form", clear_on_submit=False):
-    ticker = st.text_input("IDX Stock Code", placeholder="e.g. BBCA")
-    lots = st.number_input("Number of Lots", min_value=1, step=1, value=1)
-    submitted = st.form_submit_button("Calculate", use_container_width=True)
-
-st.markdown("", unsafe_allow_html=True)
 
 def format_rp(amount):
     s = f"{int(round(amount)):,}".replace(",", ".")
@@ -289,107 +342,129 @@ milestone_icons = {
 }
 milestone_keys = list(milestones.keys())
 
-if submitted:
-    if not ticker.strip():
-        st.error("Please enter a valid IDX stock ticker.")
-    else:
-        with st.spinner("Fetching dividend info..."):
-            try:
-                full_ticker = ticker.strip().upper() + ".JK"
-                stock = yf.Ticker(full_ticker)
-                info = stock.info
+tab_lifestyle, tab_reverse = st.tabs(["🧭 Lifestyle Calculator", "🔄 Reverse Goal Planner"])
 
-                dividend_rate = info.get("dividendRate", None)
-                price = info.get("regularMarketPrice", None)
-                dividend_yield = info.get("trailingAnnualDividendYield", None)
+with tab_lifestyle:
+    with st.form(key="main_form", clear_on_submit=False):
+        ticker = st.text_input("IDX Stock Code", placeholder="e.g. BBCA")
+        lots = st.number_input("Number of Lots", min_value=1, step=1, value=1)
+        submitted = st.form_submit_button("Calculate", use_container_width=True)
 
-                if isinstance(dividend_rate, (int, float)) and dividend_rate > 0:
-                    annual_dividend_per_share = dividend_rate
-                elif (
-                    dividend_yield is not None 
-                    and isinstance(dividend_yield, (int, float)) and dividend_yield > 0
-                    and price is not None and isinstance(price, (int, float)) and price > 0
-                ):
-                    annual_dividend_per_share = price * dividend_yield
-                else:
-                    annual_dividend_per_share = None
+    st.markdown("", unsafe_allow_html=True)
 
-                if annual_dividend_per_share is None or annual_dividend_per_share <= 0:
-                    st.error(
-                        "No valid dividend data found for this ticker, or the ticker is invalid. "
-                        "Please check the IDX stock code (e.g., BBCA)."
-                    )
+    if submitted:
+        if not ticker.strip():
+            st.error("Please enter a valid IDX stock ticker.")
+        else:
+            with st.spinner("Fetching dividend info..."):
+                try:
+                    full_ticker = ticker.strip().upper() + ".JK"
+                    stock = yf.Ticker(full_ticker)
+                    info = stock.info
+
+                    dividend_rate = info.get("dividendRate", None)
+                    price = info.get("regularMarketPrice", None)
+                    dividend_yield = info.get("trailingAnnualDividendYield", None)
+
+                    if isinstance(dividend_rate, (int, float)) and dividend_rate > 0:
+                        annual_dividend_per_share = dividend_rate
+                    elif (
+                        dividend_yield is not None
+                        and isinstance(dividend_yield, (int, float)) and dividend_yield > 0
+                        and price is not None and isinstance(price, (int, float)) and price > 0
+                    ):
+                        annual_dividend_per_share = price * dividend_yield
+                    else:
+                        annual_dividend_per_share = None
+
+                    if annual_dividend_per_share is None or annual_dividend_per_share <= 0:
+                        st.error(
+                            "No valid dividend data found for this ticker, or the ticker is invalid. "
+                            "Please check the IDX stock code (e.g., BBCA)."
+                        )
+                        st.session_state.total_net = None
+                    else:
+                        total_gross = lots * 100 * annual_dividend_per_share
+                        total_net = round(total_gross * 0.9)
+
+                        st.markdown(
+                            f"""
+                            <div class="metric-card">
+                                <div class="metric-amount">{format_rp(total_net)}</div>
+                                <div class="metric-caption">Estimated Net Annual Dividend</div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                        st.markdown("<div class='milestone-separator'></div>", unsafe_allow_html=True)
+                        st.markdown(
+                            "<div class='milestone-heading'>Lifestyle Milestones</div>",
+                            unsafe_allow_html=True
+                        )
+
+                        st.session_state.total_net = total_net
+
+                except Exception as e:
+                    st.error("No dividend data found or unable to fetch data for this ticker. Please check the stock code and try again.")
                     st.session_state.total_net = None
-                else:
-                    total_gross = lots * 100 * annual_dividend_per_share
-                    total_net = round(total_gross * 0.9)
+    else:
+        total_net = st.session_state.get("total_net", None)
+        if total_net is not None:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-amount">{format_rp(total_net)}</div>
+                    <div class="metric-caption">Estimated Net Annual Dividend</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown("<div class='milestone-separator'></div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='milestone-heading'>Lifestyle Milestones</div>",
+                unsafe_allow_html=True
+            )
 
-                    st.markdown(
-                        f"""
-                        <div class="metric-card">
-                            <div class="metric-amount">{format_rp(total_net)}</div>
-                            <div class="metric-caption">Estimated Net Annual Dividend</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    st.markdown("<div class='milestone-separator'></div>", unsafe_allow_html=True)
-                    st.markdown(
-                        "<div class='milestone-heading'>Lifestyle Milestones</div>",
-                        unsafe_allow_html=True
-                    )
-
-                    st.session_state.total_net = total_net
-
-            except Exception as e:
-                st.error("No dividend data found or unable to fetch data for this ticker. Please check the stock code and try again.")
-                st.session_state.total_net = None
-else:
     total_net = st.session_state.get("total_net", None)
     if total_net is not None:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-amount">{format_rp(total_net)}</div>
-                <div class="metric-caption">Estimated Net Annual Dividend</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown("<div class='milestone-separator'></div>", unsafe_allow_html=True)
-        st.markdown(
-            "<div class='milestone-heading'>Lifestyle Milestones</div>",
-            unsafe_allow_html=True
+        milestone_selected = st.selectbox(
+            "Choose a Milestone:",
+            options=milestone_keys,
+            format_func=lambda k: f"{milestone_icons[k]} {k} ({format_rp(milestones[k])})",
+            key="milestone_selectbox"
         )
 
-total_net = st.session_state.get("total_net", None)
-if total_net is not None:
-    milestone_selected = st.selectbox(
-        "Choose a Milestone:",
-        options=milestone_keys,
-        format_func=lambda k: f"{milestone_icons[k]} {k} ({format_rp(milestones[k])})",
-        key="milestone_selectbox"
-    )
-
-    units = int(total_net // milestones[milestone_selected])
-    if units > 0:
-        if milestone_selected in ["Apple Music + iCloud", "Gym Membership"]:
-            score_text = (
-                f"{milestone_icons[milestone_selected]} <b>Your dividends fund {units} months of {milestone_selected}!</b>"
+        units = int(total_net // milestones[milestone_selected])
+        if units > 0:
+            if milestone_selected in ["Apple Music + iCloud", "Gym Membership"]:
+                score_text = (
+                    f"{milestone_icons[milestone_selected]} <b>Your dividends fund {units} months of {milestone_selected}!</b>"
+                )
+            else:
+                score_text = (
+                    f"{milestone_icons[milestone_selected]} <b>Your dividends fund {units} cups of Specialty Coffee!</b>"
+                )
+            st.markdown(
+                f"<div style='text-align:center; font-size:1.16em; margin-top:1em; color:#65e365;'>{score_text}</div>",
+                unsafe_allow_html=True,
             )
         else:
-            score_text = (
-                f"{milestone_icons[milestone_selected]} <b>Your dividends fund {units} cups of Specialty Coffee!</b>"
+            st.markdown(
+                f"<div class='muted' style='text-align:center; font-size:1.01em; margin-top:0.7em;'>Your dividends aren't enough to afford a {milestone_selected} yet.<br>Keep growing!</div>",
+                unsafe_allow_html=True,
             )
-        st.markdown(
-            f"<div style='text-align:center; font-size:1.16em; margin-top:1em; color:#65e365;'>{score_text}</div>",
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            f"<div class='muted' style='text-align:center; font-size:1.01em; margin-top:0.7em;'>Your dividends aren't enough to afford a {milestone_selected} yet.<br>Keep growing!</div>",
-            unsafe_allow_html=True,
-        )
+
+with tab_reverse:
+    st.markdown(
+        """
+        <div class="placeholder-card">
+            <div class="placeholder-icon">🎯</div>
+            <div class="placeholder-title">Reverse Goal Planner coming soon!</div>
+            <div class="placeholder-subtitle">Prepare your dividend targets.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 st.markdown(
     f"""
