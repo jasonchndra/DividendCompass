@@ -1,3 +1,4 @@
+import math
 import streamlit as st
 import yfinance as yf
 import base64
@@ -455,16 +456,120 @@ with tab_lifestyle:
             )
 
 with tab_reverse:
-    st.markdown(
-        """
-        <div class="placeholder-card">
-            <div class="placeholder-icon">🎯</div>
-            <div class="placeholder-title">Reverse Goal Planner coming soon!</div>
-            <div class="placeholder-subtitle">Prepare your dividend targets.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.form(key="reverse_goal_form", clear_on_submit=False):
+        goal_amount = st.number_input(
+            "Target Amount (IDR)",
+            min_value=1,
+            step=50000,
+            value=5_000_000,
+            key="reverse_goal_amount",
+        )
+        period_type = st.radio(
+            "Period",
+            options=["Monthly", "Annually"],
+            horizontal=True,
+            key="reverse_period_type",
+        )
+        ticker_v2 = st.text_input(
+            "IDX Stock Code",
+            placeholder="e.g. BBCA",
+            key="reverse_ticker_v2",
+        )
+        reverse_submitted = st.form_submit_button("Calculate Target", use_container_width=True)
+
+    def _render_reverse_results(results):
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-amount">{results["lots"]} Lots</div>
+                <div class="metric-caption">Total Lots Needed to Own</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-amount">{format_rp(results["capital"])}</div>
+                <div class="metric-caption">Estimated Capital Needed</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-amount">{format_rp(results["price"])}</div>
+                <div class="metric-caption">
+                    {results["ticker"]} &middot; DPS {format_dps_id(results["dps"])} / share
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    if reverse_submitted:
+        if not ticker_v2.strip():
+            st.error("Please enter a valid IDX stock ticker.")
+        elif goal_amount <= 0:
+            st.error("Please enter a valid target amount.")
+        else:
+            period_num = 12 if period_type == "Monthly" else 1
+            with st.spinner("Fetching dividend info..."):
+                try:
+                    ticker_clean = ticker_v2.strip().upper()
+                    full_ticker = ticker_clean if ticker_clean.endswith(".JK") else f"{ticker_clean}.JK"
+                    stock = yf.Ticker(full_ticker)
+                    info = stock.info
+
+                    dividend_rate = info.get("dividendRate", None)
+                    price = info.get("regularMarketPrice", None)
+                    dividend_yield = info.get("trailingAnnualDividendYield", None)
+
+                    if isinstance(dividend_rate, (int, float)) and dividend_rate > 0:
+                        annual_dividend_per_share = dividend_rate
+                    elif (
+                        dividend_yield is not None
+                        and isinstance(dividend_yield, (int, float))
+                        and dividend_yield > 0
+                        and price is not None
+                        and isinstance(price, (int, float))
+                        and price > 0
+                    ):
+                        annual_dividend_per_share = price * dividend_yield
+                    else:
+                        annual_dividend_per_share = None
+
+                    if annual_dividend_per_share is None or annual_dividend_per_share <= 0:
+                        st.error(
+                            "No valid dividend data found for this ticker, or the ticker is invalid. "
+                            "Please check the IDX stock code (e.g., BBCA)."
+                        )
+                        st.session_state.reverse_goal_results = None
+                    elif price is None or not isinstance(price, (int, float)) or price <= 0:
+                        st.error(
+                            "Unable to fetch current stock price for this ticker. "
+                            "Please check the IDX stock code and try again."
+                        )
+                        st.session_state.reverse_goal_results = None
+                    else:
+                        gross_goal = (goal_amount * period_num) / 0.9
+                        required_lots = max(
+                            1,
+                            math.ceil(gross_goal / (annual_dividend_per_share * 100)),
+                        )
+                        required_shares = required_lots * 100
+                        estimated_capital = required_shares * price
+
+                        st.session_state.reverse_goal_results = {
+                            "lots": required_lots,
+                            "capital": estimated_capital,
+                            "price": price,
+                            "dps": annual_dividend_per_share,
+                            "ticker": ticker_clean.replace(".JK", ""),
+                        }
+                        _render_reverse_results(st.session_state.reverse_goal_results)
+
+                except Exception:
+                    st.error(
+                        "No dividend data found or unable to fetch data for this ticker. "
+                        "Please check the stock code and try again."
+                    )
+                    st.session_state.reverse_goal_results = None
+    else:
+        reverse_results = st.session_state.get("reverse_goal_results", None)
+        if reverse_results is not None:
+            _render_reverse_results(reverse_results)
 
 st.markdown(
     f"""
